@@ -301,7 +301,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.ffmpeg
-          target: dev
+          target: final
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
@@ -321,10 +321,10 @@ jobs:
       matrix:
         variant:
           - name: ffmpeg-dev
-            source_variant: ffmpeg
+            source_variant: default
             latest_tag: latest-ffmpeg-dev
           - name: magick-ffmpeg-dev
-            source_variant: magick-ffmpeg
+            source_variant: magick
             latest_tag: latest-magick-ffmpeg-dev
 
     steps:
@@ -399,7 +399,8 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.dev
+          file: Dockerfile.ffmpeg
+          target: dev
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
