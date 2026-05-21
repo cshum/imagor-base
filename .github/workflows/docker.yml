@@ -124,14 +124,14 @@ jobs:
       matrix:
         variant:
           - name: default-dev
-            source_variant: default
             latest_tag: latest-dev
+            build_args: ""
           - name: magick-dev
-            source_variant: magick
             latest_tag: latest-magick-dev
+            build_args: ENABLE_MAGICK=true
           - name: mozjpeg-dev
-            source_variant: mozjpeg
             latest_tag: latest-mozjpeg-dev
+            build_args: ENABLE_MOZJPEG=true
 
     steps:
       - name: Checkout repository
@@ -149,7 +149,6 @@ jobs:
         run: |
           chmod +x image-tag.sh
           echo "image_tag=$(./image-tag.sh ${{ matrix.variant.name }})" >> "$GITHUB_OUTPUT"
-          echo "source_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})" >> "$GITHUB_OUTPUT"
 
       - name: Check whether image tag is already complete
         id: image
@@ -205,11 +204,11 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.dev
+          file: Dockerfile
+          target: dev
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: |
-            SOURCE_TAG=${{ steps.versions.outputs.source_tag }}
+          build-args: ${{ matrix.variant.build_args }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -302,6 +301,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.ffmpeg
+          target: dev
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |

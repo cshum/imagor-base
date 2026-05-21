@@ -85,8 +85,11 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /opt/imagor /opt/imagor
+COPY --from=builder /opt/imagor/bin /opt/imagor/bin
+COPY --from=builder /opt/imagor/lib /opt/imagor/lib
 COPY --from=builder /etc/profile.d/imagor-base.sh /etc/profile.d/imagor-base.sh
+
+RUN rm -rf /opt/imagor/lib/pkgconfig /opt/imagor/lib/cmake
 
 ENV PKG_CONFIG_PATH=/opt/imagor/lib/pkgconfig
 ENV CGO_CFLAGS=-I/opt/imagor/include
@@ -98,6 +101,8 @@ WORKDIR /src
 CMD ["bash"]
 
 FROM final AS dev
+
+COPY --from=builder /opt/imagor /opt/imagor
 
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \

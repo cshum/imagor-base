@@ -48,7 +48,10 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /opt/imagor /opt/imagor
+COPY --from=builder /opt/imagor/bin /opt/imagor/bin
+COPY --from=builder /opt/imagor/lib /opt/imagor/lib
+
+RUN rm -rf /opt/imagor/lib/pkgconfig /opt/imagor/lib/cmake
 
 ENV PKG_CONFIG_PATH=/opt/imagor/lib/pkgconfig
 ENV CGO_CFLAGS=-I/opt/imagor/include
@@ -58,3 +61,55 @@ ENV FONTCONFIG_PATH=/etc/fonts
 
 WORKDIR /src
 CMD ["bash"]
+
+FROM final AS dev
+
+COPY --from=builder /opt/imagor /opt/imagor
+
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    git \
+    libaom-dev \
+    libcfitsio-dev \
+    libcgif-dev \
+    libdav1d-dev \
+    libdeflate-dev \
+    libexif-dev \
+    libfftw3-dev \
+    libgsf-1-dev \
+    libheif-plugin-aomenc \
+    libheif-plugin-x265 \
+    libimagequant-dev \
+    libjpeg-turbo8-dev \
+    libjxl-dev \
+    liblcms2-dev \
+    liblerc-dev \
+    liblzma-dev \
+    libmagickwand-dev \
+    libmatio-dev \
+    libopenexr-dev \
+    libopenjp2-7-dev \
+    libopenslide-dev \
+    liborc-0.4-dev \
+    libpango1.0-dev \
+    libpng-dev \
+    libpoppler-glib-dev \
+    libraw-dev \
+    librtmp-dev \
+    librsvg2-dev \
+    libspng-dev \
+    libtheora-dev \
+    libtiff-dev \
+    libnuma-dev \
+    libvorbis-dev \
+    libvpx-dev \
+    libwebp-dev \
+    libx264-dev \
+    libx265-dev \
+    libxml2-dev \
+    libzstd-dev \
+    pkg-config \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*

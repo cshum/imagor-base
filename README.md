@@ -27,7 +27,7 @@ The default build baseline is `ubuntu:noble`, though callers can still override 
 
 `r<rev>` is the base-image revision line for cases where the native capability surface changes while the upstream libvips version stays the same.
 
-`default`, `magick`, and `mozjpeg` are built as independent native-stack variants. Their `-dev` companions add the system `-dev` packages needed to compile downstream CGO applications against `/opt/imagor`. `ffmpeg` is layered on top of `default`, `magick-ffmpeg` is layered on top of `magick`, and their `-dev` variants are built from those published runtime tags.
+`default`, `magick`, and `mozjpeg` are built as independent native-stack variants. Their `-dev` companions add the system `-dev` packages needed to compile downstream CGO applications against `/opt/imagor`. `ffmpeg` is layered on top of `default`, `magick-ffmpeg` is layered on top of `magick`, and their `-dev` variants are built from the matching `dev` target in `Dockerfile.ffmpeg`.
 
 If the computed version tag already exists in GHCR with a complete `linux/amd64` and `linux/arm64` manifest, the workflow skips rebuilding it by default. If the tag is missing or only partially published, the workflow builds again. Use the `force_build` workflow-dispatch input when you want to rebuild anyway.
 
@@ -63,16 +63,15 @@ Build the FFmpeg variant from the default base image:
 docker build -f Dockerfile.ffmpeg --build-arg SOURCE_TAG=vips<vips>-r<rev> -t imagor-base:ffmpeg .
 ```
 
-Build the FFmpeg dev variant from the published FFmpeg image:
+Build the FFmpeg dev variant:
 
 ```bash
-docker build -f Dockerfile.dev --build-arg SOURCE_TAG=vips<vips>-r<rev>-ffmpeg -t imagor-base:ffmpeg-dev .
+docker build -f Dockerfile.ffmpeg --target dev --build-arg SOURCE_TAG=vips<vips>-r<rev> -t imagor-base:ffmpeg-dev .
 ```
 
 ## Repository layout
 
 - `Dockerfile`: multi-stage base image build
-- `Dockerfile.dev`: additive dev-package layer for downstream CGO builders
 - `Dockerfile.ffmpeg`: additive FFmpeg layer for ffmpeg-capable variants
 - `versions.sh`: pinned native dependency versions
 - `download-deps.sh`: source fetch stage
@@ -83,5 +82,6 @@ docker build -f Dockerfile.dev --build-arg SOURCE_TAG=vips<vips>-r<rev>-ffmpeg -
 ## Notes
 
 - Rust is required only for building modern librsvg.
-- The produced image installs the native stack under `/opt/imagor`.
+- The runtime image keeps only the runtime subset of the native stack under `/opt/imagor/bin` and `/opt/imagor/lib`.
+- The `dev` targets add back the full `/opt/imagor` tree plus distro `-dev` packages for downstream CGO builds.
 - Downstream app images should build against `/opt/imagor` rather than distro-provided `-dev` packages.
