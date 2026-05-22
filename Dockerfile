@@ -100,9 +100,11 @@ ENV FONTCONFIG_PATH=/etc/fonts
 WORKDIR /src
 CMD ["bash"]
 
-FROM final AS dev
+FROM final AS sdk
 
 COPY --from=builder /opt/imagor /opt/imagor
+
+FROM sdk AS dev
 
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \

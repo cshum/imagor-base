@@ -108,6 +108,8 @@ jobs:
           target: final
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha,scope=imagor-base-${{ matrix.variant.name }}
+          cache-to: type=gha,mode=max,scope=imagor-base-${{ matrix.variant.name }}
           build-args: ${{ matrix.variant.build_args }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -115,7 +117,9 @@ jobs:
   build-dev:
     name: Publish imagor base (${{ matrix.variant.name }})
     runs-on: ubuntu-latest
-    needs: build-base
+    needs:
+      - build-base
+      - build-sdk
     permissions:
       contents: read
       packages: write
@@ -124,14 +128,14 @@ jobs:
       matrix:
         variant:
           - name: default-dev
+            source_variant: default
             latest_tag: latest-dev
-            build_args: ""
           - name: magick-dev
+            source_variant: magick
             latest_tag: latest-magick-dev
-            build_args: ENABLE_MAGICK=true
           - name: mozjpeg-dev
+            source_variant: mozjpeg
             latest_tag: latest-mozjpeg-dev
-            build_args: ENABLE_MOZJPEG=true
 
     steps:
       - name: Checkout repository
@@ -149,6 +153,8 @@ jobs:
         run: |
           chmod +x image-tag.sh
           echo "image_tag=$(./image-tag.sh ${{ matrix.variant.name }})" >> "$GITHUB_OUTPUT"
+          echo "source_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})" >> "$GITHUB_OUTPUT"
+          echo "sdk_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})-sdk" >> "$GITHUB_OUTPUT"
 
       - name: Check whether image tag is already complete
         id: image
@@ -204,18 +210,110 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile
-          target: dev
+          file: Dockerfile.dev
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: ${{ matrix.variant.build_args }}
+          cache-from: type=gha,scope=imagor-base-${{ matrix.variant.source_variant }}
+          cache-to: type=gha,mode=max,scope=imagor-base-${{ matrix.variant.source_variant }}
+          build-args: |
+            SOURCE_TAG=${{ steps.versions.outputs.source_tag }}
+            SDK_TAG=${{ steps.versions.outputs.sdk_tag }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  build-sdk:
+    name: Publish imagor base (${{ matrix.variant.name }}-sdk)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        variant:
+          - name: default
+            build_args: ""
+          - name: magick
+            build_args: ENABLE_MAGICK=true
+          - name: mozjpeg
+            build_args: ENABLE_MOZJPEG=true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read image tag
+        id: versions
+        run: |
+          chmod +x image-tag.sh
+          echo "sdk_tag=$(./image-tag.sh ${{ matrix.variant.name }})-sdk" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether image tag is already complete
+        id: image
+        env:
+          IMAGE_REF: ghcr.io/cshum/imagor-base:${{ steps.versions.outputs.sdk_tag }}
+          FORCE_BUILD: ${{ github.event_name == 'workflow_dispatch' && inputs.force_build || false }}
+        run: |
+          if [ "$FORCE_BUILD" = "true" ]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "reason=forced rebuild" >> "$GITHUB_OUTPUT"
+          else
+            inspect_output="$(docker manifest inspect "$IMAGE_REF" 2>/dev/null || true)"
+            if [ -z "$inspect_output" ]; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "reason=tag missing" >> "$GITHUB_OUTPUT"
+            elif python3 -c 'import json, sys; data=json.load(sys.stdin); required={("linux", "amd64"), ("linux", "arm64")}; actual={(m.get("platform", {}).get("os"), m.get("platform", {}).get("architecture")) for m in data.get("manifests", [])} or {(data.get("os"), data.get("architecture"))}; raise SystemExit(0 if required.issubset(actual) else 1)' <<<"$inspect_output"
+            then
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+              echo "reason=complete multi-arch manifest already exists" >> "$GITHUB_OUTPUT"
+            else
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "reason=manifest exists but is incomplete" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Skip existing image tag
+        if: steps.image.outputs.exists == 'true'
+        run: |
+          echo "Skipping build for ${{ steps.versions.outputs.sdk_tag }}: ${{ steps.image.outputs.reason }}"
+
+      - name: Set up QEMU
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push imagor base sdk
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          target: sdk
+          platforms: linux/amd64,linux/arm64
+          push: true
+          cache-from: type=gha,scope=imagor-base-${{ matrix.variant.name }}
+          cache-to: type=gha,mode=max,scope=imagor-base-${{ matrix.variant.name }}
+          build-args: ${{ matrix.variant.build_args }}
+          tags: ghcr.io/cshum/imagor-base:${{ steps.versions.outputs.sdk_tag }}
 
   build-ffmpeg:
     name: Publish imagor base (${{ matrix.variant.name }})
     runs-on: ubuntu-latest
-    needs: build-base
+    needs:
+      - build-base
+      - build-dev
     permissions:
       contents: read
       packages: write
@@ -304,15 +402,111 @@ jobs:
           target: final
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha,scope=imagor-base-${{ matrix.variant.name }}
+          cache-to: type=gha,mode=max,scope=imagor-base-${{ matrix.variant.name }}
           build-args: |
             SOURCE_TAG=${{ steps.versions.outputs.source_tag }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  build-ffmpeg-sdk:
+    name: Publish imagor base (${{ matrix.variant.name }}-sdk)
+    runs-on: ubuntu-latest
+    needs:
+      - build-base
+      - build-dev
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        variant:
+          - name: ffmpeg
+            source_variant: default
+          - name: magick-ffmpeg
+            source_variant: magick
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read image tags
+        id: versions
+        run: |
+          chmod +x image-tag.sh
+          echo "sdk_tag=$(./image-tag.sh ${{ matrix.variant.name }})-sdk" >> "$GITHUB_OUTPUT"
+          echo "source_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})" >> "$GITHUB_OUTPUT"
+          echo "source_dev_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})-dev" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether image tag is already complete
+        id: image
+        env:
+          IMAGE_REF: ghcr.io/cshum/imagor-base:${{ steps.versions.outputs.sdk_tag }}
+          FORCE_BUILD: ${{ github.event_name == 'workflow_dispatch' && inputs.force_build || false }}
+        run: |
+          if [ "$FORCE_BUILD" = "true" ]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "reason=forced rebuild" >> "$GITHUB_OUTPUT"
+          else
+            inspect_output="$(docker manifest inspect "$IMAGE_REF" 2>/dev/null || true)"
+            if [ -z "$inspect_output" ]; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "reason=tag missing" >> "$GITHUB_OUTPUT"
+            elif python3 -c 'import json, sys; data=json.load(sys.stdin); required={("linux", "amd64"), ("linux", "arm64")}; actual={(m.get("platform", {}).get("os"), m.get("platform", {}).get("architecture")) for m in data.get("manifests", [])} or {(data.get("os"), data.get("architecture"))}; raise SystemExit(0 if required.issubset(actual) else 1)' <<<"$inspect_output"
+            then
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+              echo "reason=complete multi-arch manifest already exists" >> "$GITHUB_OUTPUT"
+            else
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "reason=manifest exists but is incomplete" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
+      - name: Skip existing image tag
+        if: steps.image.outputs.exists == 'true'
+        run: |
+          echo "Skipping build for ${{ steps.versions.outputs.sdk_tag }}: ${{ steps.image.outputs.reason }}"
+
+      - name: Set up QEMU
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push imagor base sdk
+        if: steps.image.outputs.exists != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.ffmpeg
+          target: sdk
+          platforms: linux/amd64,linux/arm64
+          push: true
+          cache-from: type=gha,scope=imagor-base-${{ matrix.variant.name }}
+          cache-to: type=gha,mode=max,scope=imagor-base-${{ matrix.variant.name }}
+          build-args: |
+            SOURCE_TAG=${{ steps.versions.outputs.source_tag }}
+            SOURCE_DEV_TAG=${{ steps.versions.outputs.source_dev_tag }}
+          tags: ghcr.io/cshum/imagor-base:${{ steps.versions.outputs.sdk_tag }}
+
   build-ffmpeg-dev:
     name: Publish imagor base (${{ matrix.variant.name }})
     runs-on: ubuntu-latest
-    needs: build-ffmpeg
+    needs:
+      - build-ffmpeg
+      - build-ffmpeg-sdk
     permissions:
       contents: read
       packages: write
@@ -321,10 +515,10 @@ jobs:
       matrix:
         variant:
           - name: ffmpeg-dev
-            source_variant: default
+            source_variant: ffmpeg
             latest_tag: latest-ffmpeg-dev
           - name: magick-ffmpeg-dev
-            source_variant: magick
+            source_variant: magick-ffmpeg
             latest_tag: latest-magick-ffmpeg-dev
 
     steps:
@@ -344,6 +538,7 @@ jobs:
           chmod +x image-tag.sh
           echo "image_tag=$(./image-tag.sh ${{ matrix.variant.name }})" >> "$GITHUB_OUTPUT"
           echo "source_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})" >> "$GITHUB_OUTPUT"
+          echo "sdk_tag=$(./image-tag.sh ${{ matrix.variant.source_variant }})-sdk" >> "$GITHUB_OUTPUT"
 
       - name: Check whether image tag is already complete
         id: image
@@ -399,11 +594,13 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.ffmpeg
-          target: dev
+          file: Dockerfile.dev
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha,scope=imagor-base-${{ matrix.variant.source_variant }}
+          cache-to: type=gha,mode=max,scope=imagor-base-${{ matrix.variant.source_variant }}
           build-args: |
             SOURCE_TAG=${{ steps.versions.outputs.source_tag }}
+            SDK_TAG=${{ steps.versions.outputs.sdk_tag }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
