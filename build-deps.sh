@@ -55,45 +55,12 @@ cmake_install() {
   ninja install/strip
 }
 
-cd "$deps_dir/zlib"
-cmake_install zlib \
-  -DBUILD_SHARED_LIBS=TRUE \
-  -DZLIB_COMPAT=TRUE \
-  -DWITH_GTEST=FALSE
-
-cmake_install brotli \
-  -DBUILD_SHARED_LIBS=TRUE \
-  -DBROTLI_DISABLE_TESTS=TRUE
-
-cd "$deps_dir/ffi"
-./configure \
-  --prefix="$prefix" \
-  --enable-shared \
-  --disable-static \
-  --disable-dependency-tracking \
-  --disable-multi-os-directory
-make -j"$(nproc)"
-make install-strip
-
-cmake_install pcre2 \
-  -DBUILD_SHARED_LIBS=TRUE \
-  -DBUILD_STATIC_LIBS=OFF \
-  -DPCRE2_SUPPORT_JIT=ON
-
-meson_install glib \
-  -Dlibmount=disabled \
-  -Dtests=false \
-  -Dintrospection=disabled \
-  -Dnls=disabled \
-  -Dsysprof=disabled \
-  -Dlibelf=disabled \
-  -Dinstalled_tests=false \
-
 system_pkg_config_path="$(env -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_PATH pkg-config --variable pc_path pkg-config)"
 extended_pkg_config_libdir="$PKG_CONFIG_LIBDIR:$system_pkg_config_path"
 extended_pkg_config_path="$PKG_CONFIG_PATH:$system_pkg_config_path"
 
 build_core_deps() {
+
 cd "$deps_dir/zlib"
 cmake_install zlib \
   -DBUILD_SHARED_LIBS=TRUE \
@@ -396,6 +363,7 @@ meson setup _build \
   -Ddeprecated=false \
   -Dexamples=false \
   -Dcplusplus=false \
+  -Ddocs=false \
   -Dintrospection=disabled \
   -Dmodules=disabled \
   "${magick_args[@]}"
