@@ -1,9 +1,7 @@
 ARG BASE_IMAGE=ubuntu:noble
+ARG CORE_IMAGE=ubuntu:noble
 
-FROM ${BASE_IMAGE} AS builder
-
-ARG ENABLE_MAGICK=false
-ARG ENABLE_MOZJPEG=false
+FROM ${BASE_IMAGE} AS build-base
 
 COPY . /tmp/imagor-base
 
@@ -40,9 +38,6 @@ RUN apt-get update \
     python3 \
     python3-packaging \
     xz-utils \
-  && if [ "$ENABLE_MAGICK" = "true" ]; then \
-    apt-get install -y --no-install-recommends libmagickwand-dev; \
-  fi \
   && /tmp/imagor-base/install-rust.sh \
   && /tmp/imagor-base/build-env.sh > /etc/profile.d/imagor-base.sh \
   && chmod +x /tmp/imagor-base/*.sh \
@@ -50,14 +45,49 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 ENV BASH_ENV=/etc/profile.d/imagor-base.sh
+
+FROM build-base AS core
+
+RUN /tmp/imagor-base/download-deps.sh \
+  && BUILD_DEPS_MODE=core /tmp/imagor-base/build-deps.sh
+
+FROM core AS builder
+
+ARG ENABLE_MAGICK=false
+ARG ENABLE_MOZJPEG=false
+
+ENV BASH_ENV=/etc/profile.d/imagor-base.sh
 ENV ENABLE_MAGICK=${ENABLE_MAGICK}
 ENV ENABLE_MOZJPEG=${ENABLE_MOZJPEG}
 
-RUN /tmp/imagor-base/download-deps.sh \
-  && /tmp/imagor-base/build-deps.sh \
+RUN if [ "$ENABLE_MAGICK" = "true" ]; then \
+    apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libmagickwand-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*; \
+  fi \
+  && BUILD_DEPS_MODE=variant /tmp/imagor-base/build-deps.sh \
   && rm -rf /root/deps /tmp/imagor-base
 
-FROM ${BASE_IMAGE} AS final
+FROM ${CORE_IMAGE} AS builder-reuse
+
+ARG ENABLE_MAGICK=false
+ARG ENABLE_MOZJPEG=false
+
+ENV BASH_ENV=/etc/profile.d/imagor-base.sh
+ENV ENABLE_MAGICK=${ENABLE_MAGICK}
+ENV ENABLE_MOZJPEG=${ENABLE_MOZJPEG}
+
+RUN if [ "$ENABLE_MAGICK" = "true" ]; then \
+    apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libmagickwand-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*; \
+  fi \
+  && BUILD_DEPS_MODE=variant /tmp/imagor-base/build-deps.sh \
+  && rm -rf /root/deps /tmp/imagor-base
+
+FROM ${BASE_IMAGE} AS runtime-base
 
 ARG ENABLE_MAGICK=false
 
@@ -85,6 +115,8 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+FROM runtime-base AS final
+
 COPY --from=builder /opt/imagor/bin /opt/imagor/bin
 COPY --from=builder /opt/imagor/lib /opt/imagor/lib
 COPY --from=builder /etc/profile.d/imagor-base.sh /etc/profile.d/imagor-base.sh
@@ -103,6 +135,27 @@ CMD ["bash"]
 FROM final AS sdk
 
 COPY --from=builder /opt/imagor /opt/imagor
+
+FROM runtime-base AS final-reuse
+
+COPY --from=builder-reuse /opt/imagor/bin /opt/imagor/bin
+COPY --from=builder-reuse /opt/imagor/lib /opt/imagor/lib
+COPY --from=builder-reuse /etc/profile.d/imagor-base.sh /etc/profile.d/imagor-base.sh
+
+RUN rm -rf /opt/imagor/lib/pkgconfig /opt/imagor/lib/cmake
+
+ENV PKG_CONFIG_PATH=/opt/imagor/lib/pkgconfig
+ENV CGO_CFLAGS=-I/opt/imagor/include
+ENV CGO_LDFLAGS="-L/opt/imagor/lib -Wl,-rpath,/opt/imagor/lib"
+ENV LD_LIBRARY_PATH=/opt/imagor/lib
+ENV FONTCONFIG_PATH=/etc/fonts
+
+WORKDIR /src
+CMD ["bash"]
+
+FROM final-reuse AS sdk-reuse
+
+COPY --from=builder-reuse /opt/imagor /opt/imagor
 
 FROM sdk AS dev
 

@@ -8,6 +8,7 @@ source "$script_dir/versions.sh"
 deps_dir=/root/deps
 prefix=/opt/imagor
 meson_cmd=(meson)
+build_deps_mode="${BUILD_DEPS_MODE:-all}"
 
 if [ -f "$deps_dir/meson/meson.py" ]; then
   meson_cmd=(python3 "$deps_dir/meson/meson.py")
@@ -87,6 +88,45 @@ meson_install glib \
   -Dsysprof=disabled \
   -Dlibelf=disabled \
   -Dinstalled_tests=false \
+
+system_pkg_config_path="$(env -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_PATH pkg-config --variable pc_path pkg-config)"
+extended_pkg_config_libdir="$PKG_CONFIG_LIBDIR:$system_pkg_config_path"
+extended_pkg_config_path="$PKG_CONFIG_PATH:$system_pkg_config_path"
+
+build_core_deps() {
+cd "$deps_dir/zlib"
+cmake_install zlib \
+  -DBUILD_SHARED_LIBS=TRUE \
+  -DZLIB_COMPAT=TRUE \
+  -DWITH_GTEST=FALSE
+
+cmake_install brotli \
+  -DBUILD_SHARED_LIBS=TRUE \
+  -DBROTLI_DISABLE_TESTS=TRUE
+
+cd "$deps_dir/ffi"
+./configure \
+  --prefix="$prefix" \
+  --enable-shared \
+  --disable-static \
+  --disable-dependency-tracking \
+  --disable-multi-os-directory
+make -j"$(nproc)"
+make install-strip
+
+cmake_install pcre2 \
+  -DBUILD_SHARED_LIBS=TRUE \
+  -DBUILD_STATIC_LIBS=OFF \
+  -DPCRE2_SUPPORT_JIT=ON
+
+meson_install glib \
+  -Dlibmount=disabled \
+  -Dtests=false \
+  -Dintrospection=disabled \
+  -Dnls=disabled \
+  -Dsysprof=disabled \
+  -Dlibelf=disabled \
+  -Dinstalled_tests=false \
   -Dglib_debug=disabled
 
 cmake_install highway \
@@ -122,10 +162,6 @@ configure_make_install lcms2 \
   --disable-static \
   --disable-dependency-tracking
 
-system_pkg_config_path="$(env -u PKG_CONFIG_LIBDIR -u PKG_CONFIG_PATH pkg-config --variable pc_path pkg-config)"
-extended_pkg_config_libdir="$PKG_CONFIG_LIBDIR:$system_pkg_config_path"
-extended_pkg_config_path="$PKG_CONFIG_PATH:$system_pkg_config_path"
-
 cd "$deps_dir/libraw"
 env PKG_CONFIG_LIBDIR="$extended_pkg_config_libdir" PKG_CONFIG_PATH="$extended_pkg_config_path" \
   ./configure \
@@ -136,7 +172,9 @@ env PKG_CONFIG_LIBDIR="$extended_pkg_config_libdir" PKG_CONFIG_PATH="$extended_p
     --disable-dependency-tracking
 make -j"$(nproc)"
 make install-strip
+}
 
+build_variant_deps() {
 if [ "${ENABLE_MOZJPEG:-false}" = "true" ]; then
   cd "$deps_dir/mozjpeg"
   mkdir -p _build
@@ -244,10 +282,7 @@ cmake_install aom \
   -DCONFIG_WEBM_IO=0
 
 cd "$deps_dir/libheif"
-# Ignore alpha in yuv2rgb and rgb2rgb if it has different BPP.
 git apply "$script_dir/patches/libheif-ignore-invalid-alpha.patch"
-# Fix memory leak in encoders.
-# Remove when the fix is released.
 git apply "$script_dir/patches/libheif-encoder-reuse-memory-leak.patch"
 mkdir -p _build
 cd _build
@@ -358,7 +393,9 @@ meson setup _build \
   --wrap-mode=nofallback \
   --prefix="$prefix" \
   --libdir=lib \
-  -Ddocs=false \
+  -Ddeprecated=false \
+  -Dexamples=false \
+  -Dcplusplus=false \
   -Dintrospection=disabled \
   -Dmodules=disabled \
   "${magick_args[@]}"
@@ -369,3 +406,21 @@ rm -f "$prefix"/lib/libvips-cpp.*
 rm -rf "$prefix"/lib/cmake
 find "$prefix"/lib -name '*.a' -delete
 find "$prefix"/lib -name '*.la' -delete
+}
+
+case "$build_deps_mode" in
+  all)
+    build_core_deps
+    build_variant_deps
+    ;;
+  core)
+    build_core_deps
+    ;;
+  variant)
+    build_variant_deps
+    ;;
+  *)
+    echo "unknown BUILD_DEPS_MODE: $build_deps_mode" >&2
+    exit 1
+    ;;
+esac

@@ -8,6 +8,9 @@ source "$script_dir/versions.sh"
 base_tag="vips${VIPS_VERSION}-r${IMAGOR_BASE_REVISION}"
 
 case "${1:-default}" in
+  core)
+    echo "${base_tag}-core"
+    ;;
   default)
     echo "$base_tag"
     ;;
