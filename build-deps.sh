@@ -62,12 +62,12 @@ extended_pkg_config_path="$PKG_CONFIG_PATH:$system_pkg_config_path"
 build_core_deps() {
 
 cd "$deps_dir/zlib"
-cmake_install zlib \
+CFLAGS="${CFLAGS} -O3" cmake_install zlib \
   -DBUILD_SHARED_LIBS=TRUE \
   -DZLIB_COMPAT=TRUE \
   -DWITH_GTEST=FALSE
 
-cmake_install brotli \
+CFLAGS="${CFLAGS} -O3" cmake_install brotli \
   -DBUILD_SHARED_LIBS=TRUE \
   -DBROTLI_DISABLE_TESTS=TRUE
 
@@ -96,7 +96,7 @@ meson_install glib \
   -Dinstalled_tests=false \
   -Dglib_debug=disabled
 
-cmake_install highway \
+CFLAGS="${CFLAGS} -O3" CXXFLAGS="${CXXFLAGS} -O3" cmake_install highway \
   -DBUILD_SHARED_LIBS=TRUE \
   -DHWY_ENABLE_EXAMPLES=FALSE \
   -DHWY_ENABLE_TESTS=FALSE \
@@ -124,7 +124,7 @@ configure_make_install libexif \
   --disable-static \
   --disable-dependency-tracking
 
-configure_make_install lcms2 \
+CFLAGS="${CFLAGS} -O3" configure_make_install lcms2 \
   --enable-shared \
   --disable-static \
   --disable-dependency-tracking
@@ -156,7 +156,7 @@ if [ "${ENABLE_MOZJPEG:-false}" = "true" ]; then
     ..
   ninja install/strip
 else
-  cmake_install libjpeg-turbo \
+  CFLAGS="${CFLAGS} -O3" CXXFLAGS="${CXXFLAGS} -O3" cmake_install libjpeg-turbo \
     -DENABLE_SHARED=TRUE \
     -DENABLE_STATIC=FALSE \
     -DWITH_TURBOJPEG=FALSE \
@@ -181,12 +181,12 @@ cmake_install libjxl \
   -DJPEGXL_ENABLE_SKCMS=FALSE \
   -DJPEGXL_ENABLE_SJPEG=FALSE
 
-configure_make_install libpng \
+CFLAGS="${CFLAGS} -O3" configure_make_install libpng \
   --enable-shared \
   --disable-static \
   --disable-dependency-tracking
 
-configure_make_install libwebp \
+CFLAGS="${CFLAGS} -O3" configure_make_install libwebp \
   --enable-shared \
   --disable-static \
   --disable-dependency-tracking \
@@ -206,6 +206,8 @@ meson_install cgif
 cd "$deps_dir/libde265"
 mkdir -p _build
 cd _build
+CFLAGS="${CFLAGS} -O3 -pthread" CXXFLAGS="${CXXFLAGS} -O3 -pthread" \
+LDFLAGS="${LDFLAGS} -pthread" \
 cmake \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
@@ -253,6 +255,7 @@ git apply "$script_dir/patches/libheif-ignore-invalid-alpha.patch"
 git apply "$script_dir/patches/libheif-encoder-reuse-memory-leak.patch"
 mkdir -p _build
 cd _build
+CFLAGS="${CFLAGS} -O3" CXXFLAGS="${CXXFLAGS} -O3" \
 cmake \
   -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
@@ -354,6 +357,7 @@ else
 fi
 
 PKG_CONFIG_LIBDIR="$vips_pkg_config_libdir" PKG_CONFIG_PATH="$vips_pkg_config_path" \
+CFLAGS="${CFLAGS} -O3" CXXFLAGS="${CXXFLAGS} -O3" \
 meson setup _build \
   --buildtype=release \
   --strip \
