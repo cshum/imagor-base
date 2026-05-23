@@ -407,6 +407,8 @@ jobs:
         variant:
           - name: ffmpeg
             source_variant: default
+          - name: mozjpeg-ffmpeg
+            source_variant: mozjpeg
           - name: magick-ffmpeg
             source_variant: magick
 
@@ -508,6 +510,8 @@ jobs:
         variant:
           - name: ffmpeg
             source_variant: default
+          - name: mozjpeg-ffmpeg
+            source_variant: mozjpeg
           - name: magick-ffmpeg
             source_variant: magick
 
@@ -601,6 +605,9 @@ jobs:
           - name: ffmpeg-dev
             source_variant: ffmpeg
             latest_tag: latest-ffmpeg-dev
+          - name: mozjpeg-ffmpeg-dev
+            source_variant: mozjpeg-ffmpeg
+            latest_tag: latest-mozjpeg-ffmpeg-dev
           - name: magick-ffmpeg-dev
             source_variant: magick-ffmpeg
             latest_tag: latest-magick-ffmpeg-dev

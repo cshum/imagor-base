@@ -35,6 +35,12 @@ case "${1:-default}" in
   ffmpeg-dev)
     echo "${base_tag}-ffmpeg-dev"
     ;;
+  mozjpeg-ffmpeg)
+    echo "${base_tag}-mozjpeg-ffmpeg"
+    ;;
+  mozjpeg-ffmpeg-dev)
+    echo "${base_tag}-mozjpeg-ffmpeg-dev"
+    ;;
   magick-ffmpeg)
     echo "${base_tag}-magick-ffmpeg"
     ;;
