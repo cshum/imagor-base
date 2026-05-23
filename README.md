@@ -16,10 +16,12 @@ The GitHub Actions workflow publishes these variants:
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-dev`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg-dev`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg-dev`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg-dev`
 
-`latest`, `latest-dev`, `latest-magick`, `latest-magick-dev`, `latest-mozjpeg`, `latest-mozjpeg-dev`, `latest-ffmpeg`, `latest-ffmpeg-dev`, `latest-magick-ffmpeg`, and `latest-magick-ffmpeg-dev` are also published from the `main` branch.
+`latest`, `latest-dev`, `latest-magick`, `latest-magick-dev`, `latest-mozjpeg`, `latest-mozjpeg-dev`, `latest-ffmpeg`, `latest-ffmpeg-dev`, `latest-mozjpeg-ffmpeg`, `latest-mozjpeg-ffmpeg-dev`, `latest-magick-ffmpeg`, and `latest-magick-ffmpeg-dev` are also published from the `main` branch.
 
 This keeps the public tag focused on the compatibility boundary that matters most: libvips version and feature variant. The distro baseline can live in labels, release notes, or the Dockerfile history.
 
@@ -27,7 +29,7 @@ The default build baseline is `ubuntu:noble`, though callers can still override 
 
 `r<rev>` is the base-image revision line for cases where the native capability surface changes while the upstream libvips version stays the same.
 
-`default`, `magick`, and `mozjpeg` are built as independent native-stack variants. Their `-dev` companions add the system `-dev` packages needed to compile downstream CGO applications against `/opt/imagor`. `ffmpeg` is layered on top of `default`, `magick-ffmpeg` is layered on top of `magick`, and their `-dev` variants are built from the matching `dev` target in `Dockerfile.ffmpeg`.
+`default`, `magick`, and `mozjpeg` are built as independent native-stack variants. Their `-dev` companions add the system `-dev` packages needed to compile downstream CGO applications against `/opt/imagor`. `ffmpeg` is layered on top of `default`, `mozjpeg-ffmpeg` is layered on top of `mozjpeg`, `magick-ffmpeg` is layered on top of `magick`, and their `-dev` variants are built from the matching `dev` target in `Dockerfile.ffmpeg`.
 
 If the computed version tag already exists in GHCR with a complete `linux/amd64` and `linux/arm64` manifest, the workflow skips rebuilding it by default. If the tag is missing or only partially published, the workflow builds again. Use the `force_build` workflow-dispatch input when you want to rebuild anyway.
 
@@ -61,6 +63,12 @@ Build the FFmpeg variant from the default base image:
 
 ```bash
 docker build -f Dockerfile.ffmpeg --build-arg SOURCE_TAG=vips<vips>-r<rev> -t imagor-base:ffmpeg .
+```
+
+Build the FFmpeg variant from the MozJPEG base image:
+
+```bash
+docker build -f Dockerfile.ffmpeg --build-arg SOURCE_TAG=vips<vips>-r<rev>-mozjpeg -t imagor-base:mozjpeg-ffmpeg .
 ```
 
 Build the FFmpeg dev variant:
