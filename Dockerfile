@@ -110,7 +110,9 @@ RUN apt-get update \
     libpoppler-glib8t64 \
     libstdc++6 \
   && if [ "$ENABLE_MAGICK" = "true" ]; then \
-    apt-get install -y --no-install-recommends libmagickwand-6.q16-7t64; \
+    apt-get install -y --no-install-recommends \
+      libmagickwand-6.q16-7t64 \
+      libopenexr-3-1-30; \
   fi \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
