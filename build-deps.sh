@@ -251,8 +251,6 @@ cmake_install aom \
   -DCONFIG_WEBM_IO=0
 
 cd "$deps_dir/libheif"
-git apply "$script_dir/patches/libheif-ignore-invalid-alpha.patch"
-git apply "$script_dir/patches/libheif-encoder-reuse-memory-leak.patch"
 mkdir -p _build
 cd _build
 CFLAGS="${CFLAGS} -O3" CXXFLAGS="${CXXFLAGS} -O3" \
