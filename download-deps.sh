@@ -22,6 +22,23 @@ fetch_tar() {
   local strip_flag="$3"
   local archive
   local attempt
+  local list_flag
+
+  case "$strip_flag" in
+    -xz)
+      list_flag=-tzf
+      ;;
+    -xJ)
+      list_flag=-tJf
+      ;;
+    -xj)
+      list_flag=-tjf
+      ;;
+    *)
+      echo "unsupported archive flag for $name: $strip_flag" >&2
+      return 1
+      ;;
+  esac
 
   mkdir -p "$deps_dir/$name"
   archive="$(mktemp "/tmp/${name}.XXXXXX")"
@@ -38,7 +55,7 @@ fetch_tar() {
       --retry-delay 2 \
       -o "$archive" \
       "$url" \
-      && tar "$strip_flag" -tf "$archive" >/dev/null 2>&1; then
+      && tar "$list_flag" "$archive" >/dev/null 2>&1; then
       tar "$strip_flag" -f "$archive" -C "$deps_dir/$name" --strip-components=1
       rm -f "$archive"
       return
