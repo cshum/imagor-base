@@ -21,6 +21,7 @@ fetch_tar() {
   local url="$2"
   local strip_flag="$3"
   local archive
+  local attempt
 
   mkdir -p "$deps_dir/$name"
   archive="$(mktemp "/tmp/${name}.XXXXXX")"
@@ -28,16 +29,26 @@ fetch_tar() {
   rm -rf "$deps_dir/$name"
   mkdir -p "$deps_dir/$name"
 
-  curl \
-    -LfsS \
-    --retry 5 \
-    --retry-all-errors \
-    --retry-delay 2 \
-    -o "$archive" \
-    "$url"
+  for attempt in 1 2 3; do
+    echo "Downloading $name (attempt $attempt): $url"
+    if curl \
+      -LfsS \
+      --retry 5 \
+      --retry-all-errors \
+      --retry-delay 2 \
+      -o "$archive" \
+      "$url" \
+      && tar "$strip_flag" -tf "$archive" >/dev/null 2>&1; then
+      tar "$strip_flag" -f "$archive" -C "$deps_dir/$name" --strip-components=1
+      rm -f "$archive"
+      return
+    fi
+    echo "Invalid archive received for $name from $url" >&2
+    rm -f "$archive"
+  done
 
-  tar "$strip_flag" -f "$archive" -C "$deps_dir/$name" --strip-components=1
-  rm -f "$archive"
+  echo "Unable to download a valid archive for $name from $url" >&2
+  return 1
 }
 
 fetch_git() {
