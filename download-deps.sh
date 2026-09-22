@@ -98,7 +98,7 @@ fetch_tar cgif "https://github.com/dloebl/cgif/archive/refs/tags/v${CGIF_VERSION
 fetch_tar libde265 "https://github.com/strukturag/libde265/releases/download/v${LIBDE265_VERSION}/libde265-${LIBDE265_VERSION}.tar.gz" -xz
 fetch_tar x265 "https://github.com/videolan/x265/archive/refs/tags/${X265_VERSION}.tar.gz" -xz
 fetch_tar kvazaar "https://github.com/ultravideo/kvazaar/archive/refs/tags/v${KVAZAAR_VERSION}.tar.gz" -xz
-fetch_tar dav1d "https://code.videolan.org/videolan/dav1d/-/archive/${DAV1D_VERSION}/dav1d-${DAV1D_VERSION}.tar.gz" -xz
+fetch_tar dav1d "https://download.videolan.org/pub/videolan/dav1d/${DAV1D_VERSION}/dav1d-${DAV1D_VERSION}.tar.xz" -xJ
 fetch_tar aom "https://storage.googleapis.com/aom-releases/libaom-${AOM_VERSION}.tar.gz" -xz
 fetch_tar libheif "https://github.com/strukturag/libheif/releases/download/v${LIBHEIF_VERSION}/libheif-${LIBHEIF_VERSION}.tar.gz" -xz
 fetch_tar freetype "https://gitlab.freedesktop.org/freetype/freetype/-/archive/VER-${FREETYPE_VERSION//./-}/freetype-VER-${FREETYPE_VERSION//./-}.tar.bz2" -xj
