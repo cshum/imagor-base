@@ -59,7 +59,7 @@ fetch_git() {
   git clone "$repo" "$deps_dir/$name" --branch "$ref" --depth 1 -c advice.detachedHead=false
 }
 
-fetch_tar zlib "https://github.com/zlib-ng/zlib-ng/archive/${ZLIB_VERSION}.tar.gz" -xz
+fetch_tar zlib "https://github.com/zlib-ng/zlib-ng/archive/refs/tags/${ZLIB_VERSION}.tar.gz" -xz
 fetch_tar brotli "https://github.com/google/brotli/archive/refs/tags/v${BROTLI_VERSION}.tar.gz" -xz
 fetch_tar ffi "https://github.com/libffi/libffi/releases/download/v${FFI_VERSION}/libffi-${FFI_VERSION}.tar.gz" -xz
 fetch_tar pcre2 "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VERSION}/pcre2-${PCRE2_VERSION}.tar.gz" -xz
