@@ -97,6 +97,8 @@ RUN apt-get update \
     ca-certificates \
     fontconfig-config \
     fonts-dejavu-core \
+    fonts-liberation2 \
+    fonts-open-sans \
     libcfitsio10t64 \
     libfftw3-double3 \
     libgcc-s1 \
