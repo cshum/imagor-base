@@ -6,20 +6,24 @@ This repository owns the native dependency build for libvips and related codecs.
 
 ## Images
 
-The GitHub Actions workflow publishes these variants:
+The GitHub Actions workflow publishes these variants. `<ffmpeg>` is the pinned ffmpeg version; `./image-tag.sh <variant>` prints the exact tag for one:
 
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-core`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-dev`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-dev`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg`
 - `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-dev`
-- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg`
-- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg-dev`
-- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg`
-- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg-dev`
-- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg`
-- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg-dev`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg<ffmpeg>`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg<ffmpeg>-dev`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-ffmpeg<ffmpeg>-sdk`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg<ffmpeg>`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg<ffmpeg>-dev`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-mozjpeg-ffmpeg<ffmpeg>-sdk`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg<ffmpeg>`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg<ffmpeg>-dev`
+- `ghcr.io/cshum/imagor-base:vips<vips>-r<rev>-magick-ffmpeg<ffmpeg>-sdk`
 
 `latest`, `latest-dev`, `latest-magick`, `latest-magick-dev`, `latest-mozjpeg`, `latest-mozjpeg-dev`, `latest-ffmpeg`, `latest-ffmpeg-dev`, `latest-mozjpeg-ffmpeg`, `latest-mozjpeg-ffmpeg-dev`, `latest-magick-ffmpeg`, and `latest-magick-ffmpeg-dev` are also published from the `main` branch.
 
@@ -28,6 +32,10 @@ This keeps the public tag focused on the compatibility boundary that matters mos
 The default build baseline is `ubuntu:noble`, though callers can still override `BASE_IMAGE` at build time.
 
 `r<rev>` is the base-image revision line for cases where the native capability surface changes while the upstream libvips version stays the same.
+
+The ffmpeg variants carry the ffmpeg version in the tag, so a new ffmpeg version is a new tag on the same
+`r<rev>` line rather than a revision bump: the variant builds from the published base and only ffmpeg
+compiles, leaving the libvips stack untouched.
 
 `default`, `magick`, and `mozjpeg` are built as independent native-stack variants. Their `-dev` companions add the system `-dev` packages needed to compile downstream CGO applications against `/opt/imagor`. `ffmpeg` is layered on top of `default`, `mozjpeg-ffmpeg` is layered on top of `mozjpeg`, `magick-ffmpeg` is layered on top of `magick`, and their `-dev` variants are built from the matching `dev` target in `Dockerfile.ffmpeg`.
 
