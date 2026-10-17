@@ -30,22 +30,22 @@ case "${1:-default}" in
     echo "${base_tag}-mozjpeg-dev"
     ;;
   ffmpeg)
-    echo "${base_tag}-ffmpeg"
+    echo "${base_tag}-ffmpeg${FFMPEG_VERSION}"
     ;;
   ffmpeg-dev)
-    echo "${base_tag}-ffmpeg-dev"
+    echo "${base_tag}-ffmpeg${FFMPEG_VERSION}-dev"
     ;;
   mozjpeg-ffmpeg)
-    echo "${base_tag}-mozjpeg-ffmpeg"
+    echo "${base_tag}-mozjpeg-ffmpeg${FFMPEG_VERSION}"
     ;;
   mozjpeg-ffmpeg-dev)
-    echo "${base_tag}-mozjpeg-ffmpeg-dev"
+    echo "${base_tag}-mozjpeg-ffmpeg${FFMPEG_VERSION}-dev"
     ;;
   magick-ffmpeg)
-    echo "${base_tag}-magick-ffmpeg"
+    echo "${base_tag}-magick-ffmpeg${FFMPEG_VERSION}"
     ;;
   magick-ffmpeg-dev)
-    echo "${base_tag}-magick-ffmpeg-dev"
+    echo "${base_tag}-magick-ffmpeg${FFMPEG_VERSION}-dev"
     ;;
   *)
     echo "unknown variant: ${1}" >&2
