@@ -19,7 +19,6 @@ RUN apt-get update \
     gettext \
     git \
     gperf \
-    help2man \
     libcfitsio-dev \
     libfftw3-dev \
     libgsf-1-dev \

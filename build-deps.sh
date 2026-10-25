@@ -312,12 +312,10 @@ meson_install cairo \
   -Dspectre=disabled \
   -Dsymbol-lookup=disabled
 
-cd "$deps_dir/fribidi"
-autoreconf -fiv
-configure_make_install fribidi \
-  --enable-shared \
-  --disable-static \
-  --disable-dependency-tracking
+meson_install fribidi \
+  -Ddocs=false \
+  -Dbin=false \
+  -Dtests=false
 
 meson_install pango \
   -Dgtk_doc=false \
