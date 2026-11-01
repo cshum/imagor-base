@@ -337,6 +337,7 @@ meson_install pango \
 cd "$deps_dir/librsvg"
 sed -i.bak "/cairo-rs = /s/, \"pdf\", \"ps\"//" {librsvg-c,rsvg}/Cargo.toml
 sed -i.bak "/subdir('rsvg_convert')/d" meson.build
+CFLAGS="${CFLAGS} -ldl" CXXFLAGS="${CXXFLAGS} -ldl" LDFLAGS="${LDFLAGS} -ldl" \
 meson_install librsvg \
   -Dintrospection=disabled \
   -Dpixbuf=disabled \
