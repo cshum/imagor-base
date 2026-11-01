@@ -269,6 +269,18 @@ cmake \
   ..
 ninja install/strip
 
+CFLAGS="${CFLAGS} -O3" CXXFLAGS="${CXXFLAGS} -O3" cmake_install libultrahdr \
+  -DBUILD_SHARED_LIBS=TRUE \
+  -DCMAKE_PREFIX_PATH="$prefix" \
+  -DUHDR_ENABLE_INSTALL=ON \
+  -DUHDR_BUILD_EXAMPLES=FALSE \
+  -DUHDR_BUILD_TESTS=FALSE \
+  -DUHDR_BUILD_BENCHMARK=FALSE \
+  -DUHDR_BUILD_FUZZERS=FALSE \
+  -DUHDR_BUILD_JAVA=FALSE \
+  -DUHDR_ENABLE_LOGS=FALSE \
+  -DUHDR_ENABLE_HEIF=FALSE
+
 meson_install freetype \
   -Dzlib=enabled \
   -Dpng=disabled \
@@ -366,6 +378,7 @@ meson setup _build \
   -Ddocs=false \
   -Dintrospection=disabled \
   -Dmodules=disabled \
+  -Duhdr=enabled \
   "${magick_args[@]}"
 ninja -C _build
 ninja -C _build install

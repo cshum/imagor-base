@@ -101,6 +101,7 @@ fetch_tar kvazaar "https://github.com/ultravideo/kvazaar/archive/refs/tags/v${KV
 fetch_tar dav1d "https://download.videolan.org/pub/videolan/dav1d/${DAV1D_VERSION}/dav1d-${DAV1D_VERSION}.tar.xz" -xJ
 fetch_tar aom "https://storage.googleapis.com/aom-releases/libaom-${AOM_VERSION}.tar.gz" -xz
 fetch_tar libheif "https://github.com/strukturag/libheif/releases/download/v${LIBHEIF_VERSION}/libheif-${LIBHEIF_VERSION}.tar.gz" -xz
+fetch_tar libultrahdr "https://github.com/google/libultrahdr/archive/refs/tags/v${LIBULTRAHDR_VERSION}.tar.gz" -xz
 fetch_tar freetype "https://gitlab.freedesktop.org/freetype/freetype/-/archive/VER-${FREETYPE_VERSION//./-}/freetype-VER-${FREETYPE_VERSION//./-}.tar.bz2" -xj
 fetch_tar fontconfig "https://gitlab.freedesktop.org/fontconfig/fontconfig/-/archive/${FONTCONFIG_VERSION}/fontconfig-${FONTCONFIG_VERSION}.tar.gz" -xz
 fetch_tar harfbuzz "https://github.com/harfbuzz/harfbuzz/archive/${HARFBUZZ_VERSION}.tar.gz" -xz
